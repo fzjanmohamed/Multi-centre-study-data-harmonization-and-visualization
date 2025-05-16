@@ -1,0 +1,261 @@
+# Assignment 2
+## Group Members:  Fatima J., Tolu A., and Krishika V.
+
+#import the necessary packages
+import numpy as np
+import matplotlib.pyplot as plt
+import pandas as pd
+import seaborn as s
+
+%pwd
+
+xtrfxnd = pd.read_sas("xtrfxnd(3).sas7bdat", format = 'sas7bdat')
+
+xtrfxnd
+
+## Q1. Read and create a subset of the xtrfxnd dataframe by selecting only these variables of interest:  ['id', 't_ttbmd', 't_ctth', 'r_ttbmd', 'r_ctth', 't_moart', 'r_moart', 'hicnum', 'centre', 'age', 'osteomed', 'newosteofx', 'prevfx_any']
+
+xtrfxnd.columns = xtrfxnd.columns.str.lower()
+xtrfxnd.columns
+
+vartokeep = ['id', 't_ttbmd', 't_ctbmd', 'r_ttbmd', 'r_ctbmd', 't_moart', 'r_moart', 'hicnum', 'centre', 'age', 'osteomed', 'newosteofx', 'prevfx_any']
+xtrfxnd1 = xtrfxnd.loc[:, vartokeep]
+
+xtrfxnd1
+
+## Q2. Do a frequency count for 'hicnum' and 'centre' - these are the study sites
+
+xtrfxnd1['hicnum'].value_counts()
+
+xtrfxnd1['centre'].value_counts()
+
+## Q3. Create a new variable called 'sitename', which serves as a proper label for the site names. Run another frequency procedure on the new 'sitename' variable to check if you did this correctly. 
+
+def site(hicnum):
+    if hicnum == b'CA':
+         return "Calgary"
+    elif hicnum == b'TO':
+         return "Toronto - Referent"
+    elif hicnum == b'VR':
+         return "Vancouver"
+    elif hicnum == b'HA':
+         return "Hamilton"
+    elif hicnum == b'SK':
+        return "Saskatoon"
+    
+xtrfxnd1['sitename'] = xtrfxnd1.apply(lambda x: site(x['hicnum']), axis=1)    
+
+xtrfxnd1
+
+def site1(centre):
+    if centre == 1.0:
+         return "Calgary"
+    elif centre == 4.0:
+         return "Toronto - Referent"
+    elif centre == 5.0:
+         return "Vancouver"
+    elif centre == 2.0:
+         return "Hamilton"
+    elif centre == 3.0:
+        return "Saskatoon"
+    
+xtrfxnd1['sitename'] = xtrfxnd1.apply(lambda x: site1(x['centre']), axis=1)    
+
+xtrfxnd1
+
+xtrfxnd1['sitename'].value_counts()
+
+## Q4. a) Create a boxplot of how t_ttbmd varies by site 
+
+plt.figure(figsize=(12,6))
+s.boxplot(data= xtrfxnd1, x= "sitename", y="t_ttbmd", hue="prevfx_any", orient='v') 
+plt.xlabel('Site Name', fontsize=16)
+plt.ylabel('Total BMD (at the distal TIBIA)', fontsize=16)
+plt.title('Total BMD (at the distal TIBIA) Across the Sites', fontsize=20)
+
+
+
+
+## Q4. b) Determine the distribution (frequencies) of motion grades (moart) 
+
+t_motiongrades = xtrfxnd1['t_moart'].value_counts()
+t_motiongrades
+
+r_motiongrades = xtrfxnd1['r_moart'].value_counts()
+r_motiongrades
+
+## Q4.c) Repeat the boxplot exercise but look only at motion artifact (t_moart) grades 3 and above, restricting the site to Toronto and Vancouver 
+
+xtrfxnd2 = xtrfxnd1[xtrfxnd1['t_moart'] >= 3.0]
+xtrfxnd2
+
+plt.figure(figsize=(12,6))
+
+s.boxplot(data= xtrfxnd2[xtrfxnd2['centre']>=4.0], x= "sitename", y="t_ttbmd", hue="prevfx_any", orient='v') 
+
+
+plt.xlabel('Site Name', fontsize=16)
+plt.ylabel('Total BMD (at the distal TIBIA)', fontsize=16)
+plt.title('Filtered Total BMD (at the distal TIBIA) in Toronto and Vancouver', fontsize=20)
+#plt.legend(labels=["Yes","No"], title = "Previous Fractures")  I tried to change the legend but then when I did this the
+#colour boxes corresponding to the Yes and No values disappeared and both options became identical black lines
+
+
+xtrfxnd2
+
+## Q5. Create a scatterplot of how t_ttbmd relates to age 
+
+xtrfxnd1
+
+plt.figure(figsize=(12,6))
+ttbmdage = s.scatterplot(x= 'age', y = 't_ttbmd', # x and y variables 
+            data=xtrfxnd1, # dataframe name
+            hue='newosteofx', 
+            s=100) # Size of points
+
+ttbmdage.set_title('Age versus Total Bone Mineral Density (at the distal Tibia)', fontsize = 20)
+plt.xlabel('Age', fontsize = 16)
+plt.ylabel('Total BMD (at the distal Tibia)', fontsize = 16)
+
+ttbmdage
+
+##  Q6. a) Please create new cross-calibrated values for all sites' 't_ttbmd', 't_ctbmd', 'r_ttbmd', 'r_ctbmd' values according to this table.
+
+xtrfxndcal = xtrfxnd1.copy()
+
+xtrfxndcal['t_ttbmd_new'] = np.NaN
+
+xtrfxndcal['t_ctbmd_new'] = np.NaN
+
+xtrfxndcal['r_ttbmd_new'] = np.NaN
+
+xtrfxndcal['r_ctbmd_new'] = np.NaN
+
+for i in xtrfxndcal.index:
+    if xtrfxndcal['sitename'][i] == "Hamilton" :  xtrfxndcal['t_ttbmd_new'][i] =  xtrfxndcal['t_ttbmd'][i]
+    elif xtrfxndcal['sitename'][i] == "Toronto - Referent" :  xtrfxndcal['t_ttbmd_new'][i] = xtrfxndcal['t_ttbmd'][i]
+    elif xtrfxndcal['sitename'][i] == "Saskatoon" :  xtrfxndcal['t_ttbmd_new'][i] = 1.03*(xtrfxndcal['t_ttbmd'][i]) - 23.26
+    elif xtrfxndcal['sitename'][i] == "Calgary" :  xtrfxndcal['t_ttbmd_new'][i] = 0.97*(xtrfxndcal['t_ttbmd'][i]) + 19.06
+    elif xtrfxndcal['sitename'][i] == "Vancouver" :  xtrfxndcal['t_ttbmd_new'][i] = 0.99*(xtrfxndcal['t_ttbmd'][i]) - 3.93
+        
+xtrfxndcal
+
+for i in xtrfxndcal.index:
+    if xtrfxndcal['sitename'][i] == "Hamilton" :  xtrfxndcal['t_ctbmd_new'][i] =  xtrfxndcal['t_ctbmd'][i]
+    elif xtrfxndcal['sitename'][i] == "Toronto - Referent" :  xtrfxndcal['t_ctbmd_new'][i] = xtrfxndcal['t_ctbmd'][i]
+    elif xtrfxndcal['sitename'][i] == "Saskatoon" :  xtrfxndcal['t_ctbmd_new'][i] = 0.99*(xtrfxndcal['t_ctbmd'][i]) - 0.03
+    elif xtrfxndcal['sitename'][i] == "Calgary" :  xtrfxndcal['t_ctbmd_new'][i] = 1.05*(xtrfxndcal['t_ctbmd'][i]) - 6.82
+    elif xtrfxndcal['sitename'][i] == "Vancouver" :  xtrfxndcal['t_ctbmd_new'][i] = 1.04*(xtrfxndcal['t_ctbmd'][i]) - 0.05
+        
+xtrfxndcal
+
+for i in xtrfxndcal.index:
+    if xtrfxndcal['sitename'][i] == "Hamilton" :  xtrfxndcal['r_ttbmd_new'][i] =  xtrfxndcal['r_ttbmd'][i]
+    elif xtrfxndcal['sitename'][i] == "Toronto - Referent" :  xtrfxndcal['r_ttbmd_new'][i] = xtrfxndcal['r_ttbmd'][i]
+    elif xtrfxndcal['sitename'][i] == "Saskatoon" :  xtrfxndcal['r_ttbmd_new'][i] = 1.03*(xtrfxndcal['r_ttbmd'][i]) - 23.26
+    elif xtrfxndcal['sitename'][i] == "Calgary" :  xtrfxndcal['r_ttbmd_new'][i] = 0.97*(xtrfxndcal['r_ttbmd'][i]) + 19.06
+    elif xtrfxndcal['sitename'][i] == "Vancouver" :  xtrfxndcal['r_ttbmd_new'][i] = 0.99*(xtrfxndcal['r_ttbmd'][i]) - 3.93
+        
+xtrfxndcal
+
+for i in xtrfxndcal.index:
+    if xtrfxndcal['sitename'][i] == "Hamilton" :  xtrfxndcal['r_ctbmd_new'][i] =  xtrfxndcal['r_ctbmd'][i]
+    elif xtrfxndcal['sitename'][i] == "Toronto - Referent" :  xtrfxndcal['r_ctbmd_new'][i] = xtrfxndcal['r_ctbmd'][i]
+    elif xtrfxndcal['sitename'][i] == "Saskatoon" :  xtrfxndcal['r_ctbmd_new'][i] = 0.99*(xtrfxndcal['r_ctbmd'][i]) - 0.03
+    elif xtrfxndcal['sitename'][i] == "Calgary" :  xtrfxndcal['r_ctbmd_new'][i] = 1.05*(xtrfxndcal['r_ctbmd'][i]) - 6.82
+    elif xtrfxndcal['sitename'][i] == "Vancouver" :  xtrfxndcal['r_ctbmd_new'][i] = 1.04*(xtrfxndcal['r_ctbmd'][i]) - 0.05
+        
+xtrfxndcal
+
+## Q6. b) Create a 1 x 2 subplot containing 2 boxplots: 1 for before and 1 after calibration 
+
+x = xtrfxndcal['sitename'] # Variable 1
+y = xtrfxndcal['t_ttbmd']  # Variable 2
+
+
+y2 = xtrfxndcal['t_ttbmd_new']
+
+fig, (ax1, ax2) = plt.subplots(1,2, sharex = True) 
+
+fig.set_size_inches(18, 6)
+
+fig.suptitle('Total Bone Mineral Density (at the distal TIBIA) Before and After Calibration', size = 25)
+
+s.boxplot(ax=ax1, data=xtrfxndcal, x='sitename', y='t_ttbmd') 
+
+ax1.set_title( 'Initial', size = 15 )
+ax1.set_xlabel( 'Site Name' , size = 15 )
+ax1.set_ylabel( 'Total BMD (at the distal TIBIA)' , size = 15 )
+
+s.boxplot(ax=ax2, data=xtrfxndcal, x='sitename', y='t_ttbmd_new') 
+
+ax2.set_title( 'Calibrated', size = 15 )
+ax2.set_xlabel( 'Site Name', size = 15 )
+ax2.set_ylabel( 'Calibrated Total BMD(at the distal TIBIA)' , size = 15 )
+
+
+fig.show()
+
+
+
+fig, (ax1, ax2) = plt.subplots(1,2) 
+
+
+fig.set_size_inches(18, 6)
+
+fig.suptitle('Cortical Bone Mineral Density (at the distal TIBIA) Before and After Calibration', size=25)
+
+
+s.boxplot(ax=ax1, data=xtrfxndcal, x='sitename', y='t_ctbmd') 
+
+ax1.set_title( 'Initial', size = 15 )
+ax1.set_xlabel( 'Site Name' , size = 15 )
+ax1.set_ylabel( 'Cortical BMD (at the distal TIBIA))' , size = 15 )
+
+s.boxplot(ax=ax2, data=xtrfxndcal, x='sitename', y='t_ctbmd_new') 
+
+ax2.set_title( 'Calibrated', size = 15 )
+ax2.set_xlabel( 'Site Name', size = 15 )
+ax2.set_ylabel( 'Calibrated Cortical BMD (at the distal TIBIA)' , size = 15 )
+
+fig.show()
+
+fig, (ax1, ax2) = plt.subplots(1,2) 
+
+fig.set_size_inches(18, 6)
+
+fig.suptitle('Total Bone Mineral Density (at the distal RADIUS) Before and After Calibration', size = 25)
+
+s.boxplot(ax=ax1, data=xtrfxndcal, x='sitename', y='r_ttbmd') 
+
+ax1.set_title( 'Initial', size = 15 )
+ax1.set_xlabel( 'Site Name' , size = 15 )
+ax1.set_ylabel( 'Total BMD (at the distal RADIUS)' , size = 15 )
+
+s.boxplot(ax=ax2, data=xtrfxndcal, x='sitename', y='r_ttbmd_new') 
+
+ax2.set_title( 'Calibrated', size = 15 )
+ax2.set_xlabel( 'Site Name', size = 15 )
+ax2.set_ylabel( 'Calibrated Total BMD (at the distal RADIUS)' , size = 15 )
+
+fig.show()
+
+fig, (ax1, ax2) = plt.subplots(1,2) 
+
+fig.set_size_inches(18, 6)
+
+fig.suptitle('Cortical Bone Mineral Density (at the distal RADIUS) Before and After Calibration', size = 25)
+
+s.boxplot(ax=ax1, data=xtrfxndcal, x='sitename', y='r_ctbmd') 
+
+ax1.set_title( 'Initial', size = 15 )
+ax1.set_xlabel( 'Site Name' , size = 15 )
+ax1.set_ylabel( 'Cortical BMD (at the distal RADIUS)' , size = 15 )
+
+s.boxplot(ax=ax2, data=xtrfxndcal, x='sitename', y='r_ctbmd_new') 
+
+ax2.set_title( 'Calibrated', size = 15 )
+ax2.set_xlabel( 'Site Name', size = 15 )
+ax2.set_ylabel( 'Calibrated Cortical BMD (at the distal RADIUS)' , size = 15)
+
+fig.show()
